@@ -57,13 +57,14 @@ struct CPU
    * @brief Initialize SP and PC. Clear flags and registers
    * 
    */
-  void reset(MEMORY &);
+  void reset(MEMORY &memory);
   //====================================================
 
-  Byte fetchByte(MEMORY &, u32 &);
-  Byte readByte(MEMORY &, u32 &, Byte);
+  Byte fetchByte(MEMORY &memory, u32 &cycles);
+  Byte readByte(MEMORY &memory, u32 &cycles, Byte address);
+  Byte readByte(MEMORY &memory, u32 &cycles, Word address);
 
-  Word fetchWord(MEMORY &, u32 &);
+  Word fetchWord(MEMORY &memory, u32 &cycles);
 
   /**
    * @brief Set the status of the Z and N registers
@@ -81,7 +82,8 @@ struct CPU
       //      the zero and negative flags as appropriate.
       INS_LDA_IM = 0xA9,
       INS_LDA_ZP = 0xA5,
-      INS_LDA_ZPX = 0XAD,
+      INS_LDA_ZPX = 0XB5,
+      INS_LDA_ABS = 0XAD,
 
       //JSR:  pushes the address (minus one) of the return point
       //      on to the stack and then sets the program counter to
@@ -92,9 +94,9 @@ struct CPU
    * @brief 
    * 
    * @param memory wich mem you are using.
-   * @param ticks  amount of clock cycles to execute
+   * @param cycles  amount of clock cycles to execute
    */
-  void exec(MEMORY &, u32);
+  void exec(MEMORY &memory, u32 &cycles);
 };
 
 #endif //if EMULATOR

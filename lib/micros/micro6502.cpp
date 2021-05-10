@@ -58,6 +58,13 @@ Byte CPU::readByte(MEMORY &memory, u32 &cycles, Byte address)
   return data;
 }
 
+Byte CPU::readByte(MEMORY &memory, u32 &cycles, Word address)
+{
+  Byte data = memory[address];
+  cycles--;
+  return data;
+}
+
 //============//
 //Word related//
 //============//
@@ -79,7 +86,7 @@ void CPU::LDAsetStatus()
   N = (A & 0b1000000) > 0;
 }
 
-void CPU::exec(MEMORY &memory, u32 cycles)
+void CPU::exec(MEMORY &memory, u32 &cycles)
 {
   while (cycles)
   {
@@ -87,6 +94,7 @@ void CPU::exec(MEMORY &memory, u32 cycles)
 
     switch (instruction)
     {
+    //Load Acumulator//
     case INS_LDA_IM:
     {
       Byte value = fetchByte(memory, cycles);
@@ -117,13 +125,24 @@ void CPU::exec(MEMORY &memory, u32 cycles)
     }
     break;
 
+    case INS_LDA_ABS:
+    {
+      Word absAddr = fetchWord(memory, cycles);
+  
+      A = readByte(memory, cycles, absAddr);
+      LDAsetStatus();
+    }
+    break;
+
+    //Jump Subrutine
     case INS_JSR:
     {
       Word subAddr = fetchWord(memory, cycles);
 
       memory.writeWord(cycles, PC - 1, SP);
 
-      ++PC = subAddr;
+      PC = subAddr;
+      PC++;
       cycles--;
     }
     break;

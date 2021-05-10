@@ -5,6 +5,7 @@
             "includePath": [
                 "${workspaceFolder}/**",
                 "${workspaceFolder}/lib/",
+                "${workspaceFolder}/lib/unitTest",
                 "${workspaceFolder}/lib/micros"
             ],
             "defines": [
