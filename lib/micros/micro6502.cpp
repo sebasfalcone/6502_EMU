@@ -30,7 +30,7 @@ void MEMORY::writeWord(u32 &cycles, u32 address, Word data)
 //========//
 void CPU::reset(MEMORY &memory)
 {
-  PC = 0xFFFC;
+  PC = 0xFFFA; //Memory addres where the program start
   SP = 0x0100;
 
   //flags
@@ -106,7 +106,9 @@ void CPU::exec(MEMORY &memory, u32 &cycles)
 
     switch (instruction)
     {
+    //----------------//
     //Load Acumulator//
+    //--------------//
     case INS_LDA_IM:
     {
       Byte value = fetchByte(memory, cycles);
@@ -170,7 +172,9 @@ void CPU::exec(MEMORY &memory, u32 &cycles)
     }
     break;
 
-    //Load Y Register
+    //-----------------//
+    //Load Y Register //
+    //---------------//
     case INS_LDY_IM:
     {
       Byte value = fetchByte(memory, cycles);
@@ -178,7 +182,7 @@ void CPU::exec(MEMORY &memory, u32 &cycles)
       Y = value;
       cycles--;
 
-      LDAsetStatus();
+      LDYsetStatus();
     }
     break;
 
@@ -221,6 +225,62 @@ void CPU::exec(MEMORY &memory, u32 &cycles)
 
       Y = readByte(memory, cycles, addr);
       LDYsetStatus();
+    }
+    break;
+
+    //-----------------//
+    //Load Y Register //
+    //---------------//
+    case INS_LDX_IM:
+    {
+      Byte value = fetchByte(memory, cycles);
+
+      X = value;
+      cycles--;
+
+      LDXsetStatus();
+    }
+    break;
+
+    case INS_LDX_ZP:
+    {
+      Byte zeroPageAddr = fetchByte(memory, cycles);
+
+      X = readByte(memory, cycles, zeroPageAddr);
+      LDXsetStatus();
+    }
+    break;
+
+    case INS_LDX_ZPY:
+    {
+      Byte zeroPageAddr = fetchByte(memory, cycles);
+
+      zeroPageAddr += Y;
+      cycles--;
+
+      X = readByte(memory, cycles, zeroPageAddr);
+      LDXsetStatus();
+    }
+    break;
+
+    case INS_LDX_ABS:
+    {
+      Word addr = fetchWord(memory, cycles);
+
+      X = readByte(memory, cycles, addr);
+      LDXsetStatus();
+    }
+    break;
+
+    case INS_LDX_ABSY:
+    {
+      Word addr = fetchWord(memory, cycles);
+
+      addr += Y;
+      cycles--;
+
+      X = readByte(memory, cycles, addr);
+      LDXsetStatus();
     }
     break;
 

@@ -15,11 +15,12 @@
 #include "minunit.h"
 
 //Cycles needed for the program to execute
-#define CYCLE_AMOUNT 5
+#define CYCLE_AMOUNT 8
 
-#define loadValue 0x41
+#define loadValue1 0x01
+#define loadValue2 0x02
 
-#define LDA
+#define LD
 //#define JSR
 
 //-------------------//
@@ -97,14 +98,16 @@ int main()
   memory[0x4243] = 0x84;
 //end inline program Jump Sub Rutine
 #endif
-#ifdef LDA
-  //start inline program Load Acumulator Zero page
-  cpu.X = 0x01;
-  memory[0xFFFC] = CPU::INS_LDY_ABSX;
+#ifdef LD
+  //start inline program Load instruction set
+  memory[0xFFFA] = CPU::INS_LDY_ZP; //3 cycles
+  memory[0xFFFB] = 0x0A;
+  memory[0x000A] = loadValue1;
+  memory[0xFFFC] = CPU::INS_LDX_ABSY; //5 cycles
   memory[0xFFFD] = 0x08;
   memory[0xFFFE] = 0x00;
-  memory[0x0009] = loadValue;
-//end inline program Load Acumulator Zero page
+  memory[0x0009] = loadValue2;
+//end inline program Load instruction set
 #endif
 
   u32 cycles = CYCLE_AMOUNT;
@@ -118,8 +121,9 @@ int main()
 #ifdef JSR
   MU_RUN_TEST(test_jsr);
 #endif
-#ifdef LDA
+#ifdef LD
   MU_RUN_TEST(test_ldy);
+  MU_RUN_TEST(test_ldx);
 #endif
 
   MU_RUN_TEST(test_cycles);

@@ -103,7 +103,13 @@ struct CPU
       INS_LDY_ABS = 0xAC,
       INS_LDY_ABSX = 0xBC,
 
-      
+      //LDX:  Loads a byte of memory into the X register setting
+      //      the zero and negative flags as appropriate.
+      INS_LDX_IM = 0xA2,
+      INS_LDX_ZP = 0xA6,
+      INS_LDX_ZPY = 0xB6,
+      INS_LDX_ABS = 0xAE,
+      INS_LDX_ABSY = 0xBE,
 
       //JSR:  pushes the address (minus one) of the return point
       //      on to the stack and then sets the program counter to
