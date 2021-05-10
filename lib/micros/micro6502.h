@@ -67,11 +67,17 @@ struct CPU
   Word fetchWord(MEMORY &memory, u32 &cycles);
 
   /**
+   * @name Load instructions
    * @brief Set the status of the Z and N registers
-   *        when calling an LDA instruction
+   *        when calling an Load Instruction
    * 
    */
+  ///@{
   void LDAsetStatus(void);
+  void LDXsetStatus(void);
+  void LDYsetStatus(void);
+  ///@}
+
   //====================================================
   /**
    * @brief OPCODE definitions
@@ -84,6 +90,16 @@ struct CPU
       INS_LDA_ZP = 0xA5,
       INS_LDA_ZPX = 0XB5,
       INS_LDA_ABS = 0XAD,
+      INS_LDA_ABSX = 0xBD,
+      INS_LDA_ABSY = 0xB9,
+      INS_LDA_INDX = 0xA1,
+      INS_LDA_INDY = 0xB1,
+
+      //LDY:  Loads a byte of memory into the Y register setting
+      //      the zero and negative flags as appropriate.
+      INS_LDY_IM = 0xA0,
+      INS_LDY_ZP = 0xA4,
+      INS_LDY_ZPX = 0xB4,
 
       //JSR:  pushes the address (minus one) of the return point
       //      on to the stack and then sets the program counter to

@@ -86,6 +86,18 @@ void CPU::LDAsetStatus()
   N = (A & 0b1000000) > 0;
 }
 
+void CPU::LDXsetStatus()
+{
+  Z = (X == 0);
+  N = (X & 0b1000000) > 0;
+}
+
+void CPU::LDYsetStatus()
+{
+  Z = (Y == 0);
+  N = (Y & 0b1000000) > 0;
+}
+
 void CPU::exec(MEMORY &memory, u32 &cycles)
 {
   while (cycles)
@@ -133,6 +145,44 @@ void CPU::exec(MEMORY &memory, u32 &cycles)
       LDAsetStatus();
     }
     break;
+
+    case INS_LDA_ABSX:
+    {
+      Word absAddr = fetchWord(memory, cycles);
+
+      absAddr += X;
+      cycles--;
+
+      A = readByte(memory, cycles, absAddr);
+      LDAsetStatus();    
+    }
+    break;
+
+    case INS_LDA_ABSY:
+    {
+      Word absAddr = fetchWord(memory, cycles);
+
+      absAddr += Y;
+      cycles--;
+
+      A = readByte(memory, cycles, absAddr);
+      LDAsetStatus();      
+    }
+    break;
+
+    //Load Y Register
+    case INS_LDY_IM:
+    {
+      Byte value = fetchByte(memory, cycles);
+
+      Y = value;
+      cycles--;
+
+      LDAsetStatus();
+    }
+    break;
+
+    
 
     //Jump Subrutine
     case INS_JSR:

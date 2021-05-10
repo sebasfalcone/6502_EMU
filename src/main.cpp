@@ -15,7 +15,7 @@
 #include "minunit.h"
 
 //Cycles needed for the program to execute
-#define CYCLE_AMOUNT 4
+#define CYCLE_AMOUNT 5
 
 #define loadValue 0x41
 
@@ -34,7 +34,7 @@ MU_TEST(test_cycles)
   mu_check(testCycles == 0);
 }
 
-MU_TEST(test_lda_zp)
+MU_TEST(test_lda)
 {
   if (testCpu.A == 0)
     mu_check(testCpu.Z == 1);
@@ -42,6 +42,32 @@ MU_TEST(test_lda_zp)
     mu_check(testCpu.Z == 0);
 
   if ((testCpu.A & 0b1000000) > 0)
+    mu_check(testCpu.N == 1);
+  else
+    mu_check(testCpu.N == 0);
+}
+
+MU_TEST(test_ldx)
+{
+  if (testCpu.X == 0)
+    mu_check(testCpu.Z == 1);
+  else
+    mu_check(testCpu.Z == 0);
+
+  if ((testCpu.X & 0b1000000) > 0)
+    mu_check(testCpu.N == 1);
+  else
+    mu_check(testCpu.N == 0);
+}
+
+MU_TEST(test_ldy)
+{
+  if (testCpu.Y == 0)
+    mu_check(testCpu.Z == 1);
+  else
+    mu_check(testCpu.Z == 0);
+
+  if ((testCpu.Y & 0b1000000) > 0)
     mu_check(testCpu.N == 1);
   else
     mu_check(testCpu.N == 0);
@@ -73,10 +99,11 @@ int main()
 #endif
 #ifdef LDA
   //start inline program Load Acumulator Zero page
-  memory[0xFFFC] = CPU::INS_LDA_ABS;
-  memory[0xFFFD] = 0x00;
+  cpu.Y = 0x00;
+  memory[0xFFFC] = CPU::INS_LDA_ABSY;
+  memory[0xFFFD] = 0x01;
   memory[0xFFFE] = 0x10;
-  memory[0x1010] = loadValue;
+  memory[0x0121] = loadValue;
 //end inline program Load Acumulator Zero page
 #endif
 
@@ -92,7 +119,7 @@ int main()
   MU_RUN_TEST(test_jsr);
 #endif
 #ifdef LDA
-  MU_RUN_TEST(test_lda_zp);
+  MU_RUN_TEST(test_ldy);
 #endif
 
   MU_RUN_TEST(test_cycles);
