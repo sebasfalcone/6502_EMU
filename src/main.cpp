@@ -99,11 +99,11 @@ int main()
 #endif
 #ifdef LDA
   //start inline program Load Acumulator Zero page
-  cpu.Y = 0x00;
-  memory[0xFFFC] = CPU::INS_LDA_ABSY;
-  memory[0xFFFD] = 0x01;
-  memory[0xFFFE] = 0x10;
-  memory[0x0121] = loadValue;
+  cpu.X = 0x01;
+  memory[0xFFFC] = CPU::INS_LDY_ABSX;
+  memory[0xFFFD] = 0x08;
+  memory[0xFFFE] = 0x00;
+  memory[0x0009] = loadValue;
 //end inline program Load Acumulator Zero page
 #endif
 

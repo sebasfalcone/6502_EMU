@@ -100,6 +100,10 @@ struct CPU
       INS_LDY_IM = 0xA0,
       INS_LDY_ZP = 0xA4,
       INS_LDY_ZPX = 0xB4,
+      INS_LDY_ABS = 0xAC,
+      INS_LDY_ABSX = 0xBC,
+
+      
 
       //JSR:  pushes the address (minus one) of the return point
       //      on to the stack and then sets the program counter to

@@ -140,7 +140,7 @@ void CPU::exec(MEMORY &memory, u32 &cycles)
     case INS_LDA_ABS:
     {
       Word absAddr = fetchWord(memory, cycles);
-  
+
       A = readByte(memory, cycles, absAddr);
       LDAsetStatus();
     }
@@ -154,7 +154,7 @@ void CPU::exec(MEMORY &memory, u32 &cycles)
       cycles--;
 
       A = readByte(memory, cycles, absAddr);
-      LDAsetStatus();    
+      LDAsetStatus();
     }
     break;
 
@@ -166,7 +166,7 @@ void CPU::exec(MEMORY &memory, u32 &cycles)
       cycles--;
 
       A = readByte(memory, cycles, absAddr);
-      LDAsetStatus();      
+      LDAsetStatus();
     }
     break;
 
@@ -182,7 +182,47 @@ void CPU::exec(MEMORY &memory, u32 &cycles)
     }
     break;
 
-    
+    case INS_LDY_ZP:
+    {
+      Byte zeroPageAddr = fetchByte(memory, cycles);
+
+      Y = readByte(memory, cycles, zeroPageAddr);
+      LDYsetStatus();
+    }
+    break;
+
+    case INS_LDY_ZPX:
+    {
+      Byte zeroPageAddr = fetchByte(memory, cycles);
+
+      zeroPageAddr += X;
+      cycles--;
+
+      Y = readByte(memory, cycles, zeroPageAddr);
+      LDYsetStatus();
+    }
+    break;
+
+    case INS_LDY_ABS:
+    {
+      Word addr = fetchWord(memory, cycles);
+
+      Y = readByte(memory, cycles, addr);
+      LDYsetStatus();
+    }
+    break;
+
+    case INS_LDY_ABSX:
+    {
+      Word addr = fetchWord(memory, cycles);
+
+      addr += X;
+      cycles--;
+
+      Y = readByte(memory, cycles, addr);
+      LDYsetStatus();
+    }
+    break;
 
     //Jump Subrutine
     case INS_JSR:
@@ -195,6 +235,7 @@ void CPU::exec(MEMORY &memory, u32 &cycles)
       PC++;
       cycles--;
     }
+
     break;
 
     default:
