@@ -35,12 +35,21 @@ struct MEMORY
   * @param data 
   */
   void writeWord(u32 &cycles, u32 addres, Word data);
+
+  /**
+   * @brief Writes one byte of given data on set addres
+   * 
+   * @param cycles 
+   * @param addres 
+   * @param data 
+   */
+  void writeByte(u32 &cycles, u32 addres, Byte data);
 };
 
 struct CPU
 {
   Word PC; //Progam Counter
-  Word SP; //Stack Pointer
+  Byte SP; //Stack Pointer
 
   Byte A, X, Y; //Registers
 
@@ -59,29 +68,36 @@ struct CPU
    */
   void reset(MEMORY &memory);
   //====================================================
+  //: Is not necesary to do this overload,
+  //: if we send a Byte the MSB become cero.
+  // Byte readByte(MEMORY &memory, u32 &cycles, Byte address);
+  Byte readByteMemory(MEMORY &memory, u32 &cycles, Word address);
+  Byte fetchByteMemory(MEMORY &memory, u32 &cycles);
 
-  Byte fetchByte(MEMORY &memory, u32 &cycles);
-  Byte readByte(MEMORY &memory, u32 &cycles, Byte address);
-  Byte readByte(MEMORY &memory, u32 &cycles, Word address);
+  Word readWordMemory(MEMORY &memory, u32 &cycles, Word addres);
+  Word fetchWordMemory(MEMORY &memory, u32 &cycles);
 
-  Word fetchWord(MEMORY &memory, u32 &cycles);
+  Byte fetchRegister(u32 &cycles, Byte &reg);
+  Byte readRegister(Byte &reg);
+
+  void writeRegister(Byte &reg, Byte data);
 
   /**
-   * @name Load instructions
-   * @brief Set the status of the Z and N registers
-   *        when calling an Load Instruction
-   * 
+   *  @brief Set the status of the Z and N registers when 
+   *         calling a Load Instruction 
    */
-  ///@{
-  void LDAsetStatus(void);
-  void LDXsetStatus(void);
-  void LDYsetStatus(void);
-  ///@}
+  void loadSetStatus(Byte reg);
+
+  /**
+   *  @brief Set the status of the Z and N registers 
+   *         when calling an increment instruction
+   */
+  void incrementSetStatus(Byte reg);
 
   //====================================================
   /**
    * @brief OPCODE definitions
-   * 
+   * @{
    */
   static constexpr Byte
       //LDA:  Loads a byte of memory into the accumulator setting
@@ -111,10 +127,45 @@ struct CPU
       INS_LDX_ABS = 0xAE,
       INS_LDX_ABSY = 0xBE,
 
+      //INX:  Adds one to the X register setting the
+      //      zero and negative flags as appropriate.
+      INS_INX = 0xE8,
+
+      //INY:  Adds one to the Y register setting the
+      //      zero and negative flags as appropriate.
+      INS_INY = 0xC8,
+
+      //INC:  Adds one to the value held at a specified memory
+      //      location setting the zero and negative flags as appropriate.
+      INS_INC_ZP = 0xE6,
+      INS_INC_ZPX = 0xF6,
+      INS_INC_ABS = 0xEE,
+      INS_INC_ABSX = 0xFE,
+
+      //STA:  Stores the contents of the accumulator into memory.
+      INS_STA_ZP = 0x85,
+      INS_STA_ZPX = 0x95,
+      INS_STA_ABS = 0x8D,
+      INS_STA_ABSX = 0x9D,
+      INS_STA_ABSY = 0x99,
+      INS_STA_INDX = 0x81,
+      INS_STA_INDY = 0x91,
+
+      //STX:  Stores the contents of the X register into memory.
+      INS_STX_ZP = 0x86,
+      INS_STX_ZPY = 0x96,
+      INS_STX_ABS = 0x8E,
+
+      //STY:  Stores the contents of the Y register into memory.
+      INS_STY_ZP = 0x84,
+      INS_STY_ZPX = 0x94,
+      INS_STY_ABS = 0x8C,
+      
       //JSR:  pushes the address (minus one) of the return point
       //      on to the stack and then sets the program counter to
       //      the target memory address.
       INS_JSR = 0x20;
+  /** @} */
   //====================================================
   /**
    * @brief 

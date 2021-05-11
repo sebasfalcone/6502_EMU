@@ -25,13 +25,20 @@ void MEMORY::writeWord(u32 &cycles, u32 address, Word data)
   cycles -= 2;
 }
 
+void MEMORY::writeByte(u32 &cycles, u32 address, Byte data)
+{
+  this->data[address] = data & 0xFF;
+
+  cycles--;
+}
+
 //========//
 //  CPU   //
 //========//
 void CPU::reset(MEMORY &memory)
 {
-  PC = 0xFFFA; //Memory addres where the program start
-  SP = 0x0100;
+  PC = 0xFFF0; //Memory addres where the program start
+  SP = 0x00FF; //Start of stack pointer
 
   //flags
   D = Z = I = D = B = V = N = 0;
@@ -44,31 +51,44 @@ void CPU::reset(MEMORY &memory)
 //============//
 //Byte related//
 //============//
-Byte CPU::fetchByte(MEMORY &memory, u32 &cycles)
+Byte CPU::fetchByteMemory(MEMORY &memory, u32 &cycles)
 {
   Byte data = memory[PC++];
   cycles--;
   return data;
 }
 
-Byte CPU::readByte(MEMORY &memory, u32 &cycles, Byte address)
+Byte CPU::readByteMemory(MEMORY &memory, u32 &cycles, Word address)
 {
   Byte data = memory[address];
   cycles--;
   return data;
 }
 
-Byte CPU::readByte(MEMORY &memory, u32 &cycles, Word address)
+Byte CPU::fetchRegister(u32 &cycles, Byte &reg)
 {
-  Byte data = memory[address];
+  Byte data = reg;
+
+  PC++;
   cycles--;
   return data;
+}
+
+Byte CPU::readRegister(Byte &reg)
+{
+  Byte data = reg;
+  return data;
+}
+
+void CPU::writeRegister(Byte &reg, Byte data)
+{
+  reg = data;
 }
 
 //============//
 //Word related//
 //============//
-Word CPU::fetchWord(MEMORY &memory, u32 &cycles)
+Word CPU::fetchWordMemory(MEMORY &memory, u32 &cycles)
 {
   // 6502 uses little endian
   Word data = memory[PC++];
@@ -80,29 +100,34 @@ Word CPU::fetchWord(MEMORY &memory, u32 &cycles)
   return data;
 }
 
-void CPU::LDAsetStatus()
+Word CPU::readWordMemory(MEMORY &memory, u32 &cycles, Word address)
 {
-  Z = (A == 0);
-  N = (A & 0b1000000) > 0;
+  Word data = memory[address++];
+  data |= (memory[address] << 8);
+
+  cycles -= 2;
+  return data;
 }
 
-void CPU::LDXsetStatus()
+//LOAD SET STATUS//
+void CPU::loadSetStatus(Byte reg)
 {
-  Z = (X == 0);
-  N = (X & 0b1000000) > 0;
+  Z = (reg == 0);
+  N = (reg & 0b1000000) > 0;
 }
 
-void CPU::LDYsetStatus()
+//INCREMENT SET STATUS//
+void CPU::incrementSetStatus(Byte reg)
 {
-  Z = (Y == 0);
-  N = (Y & 0b1000000) > 0;
+  Z = (reg == 0);
+  N = (reg & 0b1000000) > 0;
 }
 
 void CPU::exec(MEMORY &memory, u32 &cycles)
 {
   while (cycles)
   {
-    Byte instruction = fetchByte(memory, cycles); //fetch next instruction from memory
+    Byte instruction = fetchByteMemory(memory, cycles); //fetch next instruction from memory
 
     switch (instruction)
     {
@@ -111,64 +136,70 @@ void CPU::exec(MEMORY &memory, u32 &cycles)
     //--------------//
     case INS_LDA_IM:
     {
-      Byte value = fetchByte(memory, cycles);
+      Byte value = fetchByteMemory(memory, cycles);
 
-      A = value;
-      LDAsetStatus();
+      writeRegister(A, value);
+
+      loadSetStatus(A);
     }
     break;
 
     case INS_LDA_ZP:
     {
-      Byte zeroPageAddr = fetchByte(memory, cycles);
+      Byte addr = fetchByteMemory(memory, cycles);
 
-      A = readByte(memory, cycles, zeroPageAddr);
-      LDAsetStatus();
+      writeRegister(A, readByteMemory(memory, cycles, addr));
+
+      loadSetStatus(A);
     }
     break;
 
     case INS_LDA_ZPX:
     {
-      Byte zeroPageAddr = fetchByte(memory, cycles);
+      Byte addr = fetchByteMemory(memory, cycles);
 
-      zeroPageAddr += X;
+      addr += readRegister(X);
       cycles--;
 
-      A = readByte(memory, cycles, zeroPageAddr);
-      LDAsetStatus();
+      writeRegister(A, readByteMemory(memory, cycles, addr));
+
+      loadSetStatus(A);
     }
     break;
 
     case INS_LDA_ABS:
     {
-      Word absAddr = fetchWord(memory, cycles);
+      Word addr = fetchWordMemory(memory, cycles);
 
-      A = readByte(memory, cycles, absAddr);
-      LDAsetStatus();
+      writeRegister(A, readByteMemory(memory, cycles, addr));
+
+      loadSetStatus(A);
     }
     break;
 
     case INS_LDA_ABSX:
     {
-      Word absAddr = fetchWord(memory, cycles);
+      Word addr = fetchWordMemory(memory, cycles);
 
-      absAddr += X;
+      addr += readRegister(X);
       cycles--;
 
-      A = readByte(memory, cycles, absAddr);
-      LDAsetStatus();
+      writeRegister(A, readByteMemory(memory, cycles, addr));
+
+      loadSetStatus(A);
     }
     break;
 
     case INS_LDA_ABSY:
     {
-      Word absAddr = fetchWord(memory, cycles);
+      Word addr = fetchWordMemory(memory, cycles);
 
-      absAddr += Y;
+      addr += readRegister(Y);
       cycles--;
 
-      A = readByte(memory, cycles, absAddr);
-      LDAsetStatus();
+      writeRegister(A, readByteMemory(memory, cycles, addr));
+
+      loadSetStatus(A);
     }
     break;
 
@@ -177,54 +208,57 @@ void CPU::exec(MEMORY &memory, u32 &cycles)
     //---------------//
     case INS_LDY_IM:
     {
-      Byte value = fetchByte(memory, cycles);
+      Byte value = fetchByteMemory(memory, cycles);
 
-      Y = value;
-      cycles--;
+      writeRegister(Y, value);
 
-      LDYsetStatus();
+      loadSetStatus(Y);
     }
     break;
 
     case INS_LDY_ZP:
     {
-      Byte zeroPageAddr = fetchByte(memory, cycles);
+      Byte addr = fetchByteMemory(memory, cycles);
 
-      Y = readByte(memory, cycles, zeroPageAddr);
-      LDYsetStatus();
+      writeRegister(Y, readByteMemory(memory, cycles, addr));
+
+      loadSetStatus(Y);
     }
     break;
 
     case INS_LDY_ZPX:
     {
-      Byte zeroPageAddr = fetchByte(memory, cycles);
+      Byte addr = fetchByteMemory(memory, cycles);
 
-      zeroPageAddr += X;
+      addr += readRegister(X);
       cycles--;
 
-      Y = readByte(memory, cycles, zeroPageAddr);
-      LDYsetStatus();
+      writeRegister(Y, readByteMemory(memory, cycles, addr));
+
+      loadSetStatus(Y);
     }
     break;
 
     case INS_LDY_ABS:
     {
-      Word addr = fetchWord(memory, cycles);
+      Word addr = fetchWordMemory(memory, cycles);
 
-      Y = readByte(memory, cycles, addr);
-      LDYsetStatus();
+      writeRegister(Y, readByteMemory(memory, cycles, addr));
+
+      loadSetStatus(Y);
     }
     break;
 
     case INS_LDY_ABSX:
     {
-      Word addr = fetchWord(memory, cycles);
+      Word addr = fetchWordMemory(memory, cycles);
 
-      addr += X;
+      addr += readRegister(X);
       cycles--;
 
-      Y = readByte(memory, cycles, addr);
-      LDYsetStatus();
+      writeRegister(Y, readByteMemory(memory, cycles, addr));
+
+      loadSetStatus(Y);
     }
     break;
 
@@ -233,61 +267,137 @@ void CPU::exec(MEMORY &memory, u32 &cycles)
     //---------------//
     case INS_LDX_IM:
     {
-      Byte value = fetchByte(memory, cycles);
+      Byte value = fetchByteMemory(memory, cycles);
 
-      X = value;
-      cycles--;
+      writeRegister(X, value);
 
-      LDXsetStatus();
+      loadSetStatus(X);
     }
     break;
 
     case INS_LDX_ZP:
     {
-      Byte zeroPageAddr = fetchByte(memory, cycles);
+      Byte addr = fetchByteMemory(memory, cycles);
 
-      X = readByte(memory, cycles, zeroPageAddr);
-      LDXsetStatus();
+      writeRegister(X, readByteMemory(memory, cycles, addr));
+
+      loadSetStatus(X);
     }
     break;
 
     case INS_LDX_ZPY:
     {
-      Byte zeroPageAddr = fetchByte(memory, cycles);
+      Byte addr = fetchByteMemory(memory, cycles);
 
-      zeroPageAddr += Y;
+      addr += readRegister(Y);
       cycles--;
 
-      X = readByte(memory, cycles, zeroPageAddr);
-      LDXsetStatus();
+      writeRegister(X, readByteMemory(memory, cycles, addr));
+
+      loadSetStatus(X);
     }
     break;
 
     case INS_LDX_ABS:
     {
-      Word addr = fetchWord(memory, cycles);
+      Word addr = fetchWordMemory(memory, cycles);
 
-      X = readByte(memory, cycles, addr);
-      LDXsetStatus();
+      writeRegister(X, readByteMemory(memory, cycles, addr));
+
+      loadSetStatus(X);
     }
     break;
 
     case INS_LDX_ABSY:
     {
-      Word addr = fetchWord(memory, cycles);
+      Word addr = fetchWordMemory(memory, cycles);
 
-      addr += Y;
+      addr += readRegister(Y);
       cycles--;
 
-      X = readByte(memory, cycles, addr);
-      LDXsetStatus();
+      writeRegister(X, readByteMemory(memory, cycles, addr));
+
+      loadSetStatus(X);
     }
     break;
 
-    //Jump Subrutine
+    //---------------------//
+    //Increment X register//
+    //-------------------//
+    case INS_INX:
+    {
+      writeRegister(X, fetchRegister(cycles, X) + 1);
+
+      incrementSetStatus(X);
+    }
+    break;
+
+    //---------------------//
+    //Increment Y register//
+    //-------------------//
+    case INS_INY:
+    {
+      writeRegister(Y, fetchRegister(cycles, Y) + 1);
+
+      incrementSetStatus(Y);
+    }
+    break;
+
+    //-----------.-----//
+    //Increment Memory//
+    //---------------//
+    case INS_INC_ZP:
+    {
+      Byte addr = fetchByteMemory(memory, cycles);
+
+      memory.writeByte(cycles, addr, readByteMemory(memory, cycles, addr) + 1);
+
+      incrementSetStatus(memory[addr]);
+    }
+    break;
+
+    case INS_INC_ZPX:
+    {
+      Byte addr = fetchByteMemory(memory, cycles);
+
+      addr += readRegister(X);
+      cycles--;
+
+      memory.writeByte(cycles, addr, readByteMemory(memory, cycles, addr) + 1);
+
+      incrementSetStatus(memory[addr]);
+    }
+    break;
+
+    case INS_INC_ABS:
+    {
+      Word addr = fetchWordMemory(memory, cycles);
+
+      memory.writeByte(cycles, addr, readByteMemory(memory, cycles, addr) + 1);
+
+      incrementSetStatus(memory[addr]);
+    }
+    break;
+
+    case INS_INC_ABSX:
+    {
+      Word addr = fetchWordMemory(memory, cycles);
+
+      addr += readRegister(X);
+      cycles--;
+
+      memory.writeByte(cycles, addr, readByteMemory(memory, cycles, addr) + 1);
+
+      incrementSetStatus(memory[addr]);
+    }
+    break;
+
+    //---------------//
+    //Jump Subrutine//
+    //-------------//
     case INS_JSR:
     {
-      Word subAddr = fetchWord(memory, cycles);
+      Word subAddr = fetchWordMemory(memory, cycles);
 
       memory.writeWord(cycles, PC - 1, SP);
 
@@ -296,6 +406,127 @@ void CPU::exec(MEMORY &memory, u32 &cycles)
       cycles--;
     }
 
+    //-----------------//
+    //Store Acumulator//
+    //---------------//
+    //STA DONT AFFECT FLAGS
+    case INS_STA_ZP:
+    {
+      Byte addr = fetchByteMemory(memory, cycles);
+
+      memory.writeByte(cycles, addr, readRegister(A));
+    }
+    break;
+
+    case INS_STA_ZPX:
+    {
+      Byte addr = fetchByteMemory(memory, cycles);
+
+      addr += readRegister(X);
+      cycles--;
+
+      memory.writeByte(cycles, addr, readRegister(A));
+    }
+    break;
+
+    case INS_STA_ABS:
+    {
+      Word addr = fetchWordMemory(memory, cycles);
+
+      memory.writeByte(cycles, addr, readRegister(A));
+    }
+    break;
+
+    case INS_STA_ABSX:
+    {
+      Word addr = fetchWordMemory(memory, cycles);
+
+      addr += readRegister(X);
+      cycles--;
+
+      memory.writeByte(cycles, addr, readRegister(A));
+    }
+    break;
+
+    case INS_STA_ABSY:
+    {
+      Word addr = fetchWordMemory(memory, cycles);
+
+      addr += readRegister(Y);
+      cycles--;
+
+      memory.writeByte(cycles, addr, readRegister(A));
+    }
+    break;
+
+    case INS_STA_INDX:
+    {
+    }
+    break;
+
+    case INS_STA_INDY:
+    {
+    }
+    break;
+
+    //-----------------//
+    //Store X register//
+    //---------------//
+    //STX DONT AFFECT FLAGS
+    case INS_STX_ZP:
+    {
+      Byte addr = fetchByteMemory(memory, cycles);
+
+      memory.writeByte(cycles, addr, readRegister(X));
+    }
+    break;
+
+    case INS_STX_ZPY:
+    {
+      Byte addr = fetchByteMemory(memory, cycles);
+
+      addr += readRegister(Y);
+      cycles--;
+
+      memory.writeByte(cycles, addr, readRegister(X));
+    }
+    break;
+
+    case INS_STX_ABS:
+    {
+      Word addr = fetchWordMemory(memory, cycles);
+
+      memory.writeByte(cycles, addr, readRegister(X));
+    }
+    break;
+    //-----------------//
+    //Store Y register//
+    //---------------//
+    //STY DONT AFFECT FLAGS
+    case INS_STY_ZP:
+    {
+      Byte addr = fetchByteMemory(memory, cycles);
+
+      memory.writeByte(cycles, addr, readRegister(Y));
+    }
+    break;
+
+    case INS_STY_ZPX:
+    {
+      Byte addr = fetchByteMemory(memory, cycles);
+
+      addr += readRegister(X);
+
+      memory.writeByte(cycles, addr, readRegister(Y));
+    }
+    break;
+
+    case INS_STY_ABS:
+    {
+      Word addr = fetchWordMemory(memory, cycles);
+
+      memory.writeByte(cycles, addr, readRegister(Y));
+    }
     break;
 
     default:
