@@ -15,7 +15,7 @@
 #include "minunit.h"
 
 //Cycles needed for the program to execute
-#define CYCLE_AMOUNT 11
+#define CYCLE_AMOUNT 5
 
 #define loadValue1 0xA0
 #define loadValue2 0x0C
@@ -108,21 +108,20 @@ MU_TEST(test_jsr)
 
 int main()
 {
-  MEMORY memory;
   CPU cpu;
+  MEMORY memory;
 
   cpu.reset(memory);
 
   //start inline program Load instruction set
-  memory[0xFFFA] = CPU::INS_LDA_ZP; //3 cycles
-  memory[0xFFFB] = 0x0C;
-  memory[0x000C] = loadValue1;
+  memory[0x000A] = 0x03;
 
-  memory[0xFFFC] = CPU::INS_STA_ZP; //3 cycles
-  memory[0xFFFD] = 0x0A;
+  memory[0xFFFA] = CPU::INS_LDX_ZP; //3 cycles
+  memory[0xFFFB] = 0x09;
+  memory[0x0009] = 0x01;
 
-  memory[0xFFFE] = CPU::INS_INC_ZP; //5 cycles
-  memory[0xFFFF] = 0X0A;
+  memory[0xFFFC] = CPU::INS_CPX_ZP; //3 cycles
+  memory[0xFFFD] = 0X0A;
   //end inline program Load instruction set
 
   u32 cycles = CYCLE_AMOUNT;
@@ -130,7 +129,6 @@ int main()
 
   //start test code
   testCycles = cycles;
-  testMemory = memory;
   testCpu = cpu;
 
   MU_RUN_TEST(test_jsr);

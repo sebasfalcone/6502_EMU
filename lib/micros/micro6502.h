@@ -5,7 +5,6 @@
 
 using Byte = uint8_t;
 using Word = uint16_t;
-
 using u32 = uint32_t;
 
 struct MEMORY
@@ -44,10 +43,72 @@ struct MEMORY
    * @param data 
    */
   void writeByte(u32 &cycles, u32 addres, Byte data);
+
+  Byte readByte(u32 &cycles, Word address);
+  Word readWord(u32 &cycles, Word addres);
+
+  Byte fetchByte(u32 &cycles, Word &PC);
+  Word fetchWord(u32 &cycles, Word &PC);
 };
 
 struct CPU
 {
+  /**
+   * @brief 
+   * 
+   * @param memory Wich memory you are using.
+   * @param cycles Amount of clock cycles to execute
+   */
+  void exec(MEMORY &memory, u32 &cycles);
+
+  /**
+   * @brief Initialize SP and PC 
+   *        Clear flags and registers
+   *        Initialize Memory
+   */
+  void reset(MEMORY &memory);
+  //====================================================
+  /**
+   * @brief Operations with registers
+   * @{
+   */
+  Byte fetchRegister(u32 &cycles, Byte &reg);
+  Byte readRegister(Byte &reg);
+  void writeRegister(Byte &reg, Byte data);
+  /** @} */
+  //====================================================
+  /**
+   *  @brief Set the status of the Z and N flags when 
+   *         calling a Load Instruction 
+   * 
+   *  @param 
+   */
+  void loadSetStatus(const Byte reg);
+
+  /**
+   *  @brief Set the status of the Z and N flags 
+   *         when calling an increment instruction
+   * 
+   *  @param reg: Destiny register
+   */
+  void incrementSetStatus(const Byte reg);
+
+  /**
+   * @brief Set the status of Z and N flags
+   *        when calling a transfer instruction
+   * 
+   * @param reg: Destiny register
+   */
+  void transferSetStatus(const Byte reg);
+
+  /**
+   * @brief Set the status of Z, N and C flags
+   *        when calling a compare instruction
+   * 
+   * @param select: result of comparison
+   */
+  void cmpSetStatus(const Byte reg);
+
   Word PC; //Progam Counter
   Byte SP; //Stack Pointer
 
@@ -62,39 +123,6 @@ struct CPU
   Byte V : 6; //Overflow
   Byte N : 7; //Negative
 
-  /**
-   * @brief Initialize SP and PC. Clear flags and registers
-   * 
-   */
-  void reset(MEMORY &memory);
-  //====================================================
-  //: Is not necesary to do this overload,
-  //: if we send a Byte the MSB become cero.
-  // Byte readByte(MEMORY &memory, u32 &cycles, Byte address);
-  Byte readByteMemory(MEMORY &memory, u32 &cycles, Word address);
-  Byte fetchByteMemory(MEMORY &memory, u32 &cycles);
-
-  Word readWordMemory(MEMORY &memory, u32 &cycles, Word addres);
-  Word fetchWordMemory(MEMORY &memory, u32 &cycles);
-
-  Byte fetchRegister(u32 &cycles, Byte &reg);
-  Byte readRegister(Byte &reg);
-
-  void writeRegister(Byte &reg, Byte data);
-
-  /**
-   *  @brief Set the status of the Z and N registers when 
-   *         calling a Load Instruction 
-   */
-  void loadSetStatus(Byte reg);
-
-  /**
-   *  @brief Set the status of the Z and N registers 
-   *         when calling an increment instruction
-   */
-  void incrementSetStatus(Byte reg);
-
-  //====================================================
   /**
    * @brief OPCODE definitions
    * @{
@@ -126,6 +154,12 @@ struct CPU
       INS_LDX_ZPY = 0xB6,
       INS_LDX_ABS = 0xAE,
       INS_LDX_ABSY = 0xBE,
+
+      //CPX:  Compares the contents of the X register with
+      //      another memory held value
+      INS_CPX_IM = 0xE0,
+      INS_CPX_ZP = 0xE4,
+      INS_CPX_ABS = 0xEC,
 
       //INX:  Adds one to the X register setting the
       //      zero and negative flags as appropriate.
@@ -160,20 +194,25 @@ struct CPU
       INS_STY_ZP = 0x84,
       INS_STY_ZPX = 0x94,
       INS_STY_ABS = 0x8C,
-      
+
+      //TYA:  Copies the current contents of the Y into A.
+      INS_TYA = 0x98,
+
+      //TXA:  Copies the current contents of the X into A.
+      INS_TXA = 0x8A,
+
+      //TAX:  Copies the current contents of A into the X.
+      INS_TAX = 0xAA,
+
+      //TAY:  Copies the current contents of the A into Y
+      INS_TAY = 0xA8,
+
       //JSR:  pushes the address (minus one) of the return point
       //      on to the stack and then sets the program counter to
       //      the target memory address.
       INS_JSR = 0x20;
+
   /** @} */
-  //====================================================
-  /**
-   * @brief 
-   * 
-   * @param memory wich mem you are using.
-   * @param cycles  amount of clock cycles to execute
-   */
-  void exec(MEMORY &memory, u32 &cycles);
 };
 
-#endif //if EMULATOR
+#endif //EMULATOR
