@@ -20,8 +20,8 @@
  * OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
  * WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-#ifndef MINUNIT_MINUNIT_H
-#define MINUNIT_MINUNIT_H
+#ifndef __MINUNIT_H__
+#define __MINUNIT_H__
 
 #ifdef __cplusplus
 	extern "C" {
@@ -29,10 +29,6 @@
 
 #if defined(_WIN32)
 #include <Windows.h>
-#if defined(_MSC_VER) && _MSC_VER < 1900
-  #define snprintf _snprintf
-  #define __func__ __FUNCTION__
-#endif
 
 #elif defined(__unix__) || defined(__unix) || defined(unix) || (defined(__APPLE__) && defined(__MACH__))
 
@@ -47,15 +43,10 @@
 #include <sys/time.h>	/* gethrtime(), gettimeofday() */
 #include <sys/resource.h>
 #include <sys/times.h>
-#include <string.h>
 
 #if defined(__MACH__) && defined(__APPLE__)
 #include <mach/mach.h>
 #include <mach/mach_time.h>
-#endif
-
-#if __GNUC__ >= 5 && !defined(__STDC_VERSION__)
-#define __func__ __extension__ __FUNCTION__
 #endif
 
 #else
@@ -67,7 +58,7 @@
 
 /*  Maximum length of last message */
 #define MINUNIT_MESSAGE_LEN 1024
-/*  Accuracy with which floats are compared */
+/*  Do not change */
 #define MINUNIT_EPSILON 1E-12
 
 /*  Misc. counters */
@@ -88,8 +79,8 @@ static void (*minunit_setup)(void) = NULL;
 static void (*minunit_teardown)(void) = NULL;
 
 /*  Definitions */
-#define MU_TEST(method_name) static void method_name(void)
-#define MU_TEST_SUITE(suite_name) static void suite_name(void)
+#define MU_TEST(method_name) static void method_name()
+#define MU_TEST_SUITE(suite_name) static void suite_name()
 
 #define MU__SAFE_BLOCK(block) do {\
 	block\
@@ -110,7 +101,7 @@ static void (*minunit_teardown)(void) = NULL;
 
 /*  Test runner */
 #define MU_RUN_TEST(test) MU__SAFE_BLOCK(\
-	if (minunit_real_timer==0 && minunit_proc_timer==0) {\
+	if (minunit_real_timer==0 && minunit_real_timer==0) {\
 		minunit_real_timer = mu_timer_real();\
 		minunit_proc_timer = mu_timer_cpu();\
 	}\
@@ -138,7 +129,6 @@ static void (*minunit_teardown)(void) = NULL;
 		minunit_end_real_timer - minunit_real_timer,\
 		minunit_end_proc_timer - minunit_proc_timer);\
 )
-#define MU_EXIT_CODE minunit_fail
 
 /*  Assertions */
 #define mu_check(test) MU__SAFE_BLOCK(\
@@ -192,27 +182,7 @@ static void (*minunit_teardown)(void) = NULL;
 	minunit_tmp_e = (expected);\
 	minunit_tmp_r = (result);\
 	if (fabs(minunit_tmp_e-minunit_tmp_r) > MINUNIT_EPSILON) {\
-		int minunit_significant_figures = 1 - log10(MINUNIT_EPSILON);\
-		snprintf(minunit_last_message, MINUNIT_MESSAGE_LEN, "%s failed:\n\t%s:%d: %.*g expected but was %.*g", __func__, __FILE__, __LINE__, minunit_significant_figures, minunit_tmp_e, minunit_significant_figures, minunit_tmp_r);\
-		minunit_status = 1;\
-		return;\
-	} else {\
-		printf(".");\
-	}\
-)
-
-#define mu_assert_string_eq(expected, result) MU__SAFE_BLOCK(\
-	const char* minunit_tmp_e = expected;\
-	const char* minunit_tmp_r = result;\
-	minunit_assert++;\
-	if (!minunit_tmp_e) {\
-		minunit_tmp_e = "<null pointer>";\
-	}\
-	if (!minunit_tmp_r) {\
-		minunit_tmp_r = "<null pointer>";\
-	}\
-	if(strcmp(minunit_tmp_e, minunit_tmp_r)) {\
-		snprintf(minunit_last_message, MINUNIT_MESSAGE_LEN, "%s failed:\n\t%s:%d: '%s' expected but was '%s'", __func__, __FILE__, __LINE__, minunit_tmp_e, minunit_tmp_r);\
+		snprintf(minunit_last_message, MINUNIT_MESSAGE_LEN, "%s failed:\n\t%s:%d: %g expected but was %g", __func__, __FILE__, __LINE__, minunit_tmp_e, minunit_tmp_r);\
 		minunit_status = 1;\
 		return;\
 	} else {\
@@ -233,20 +203,20 @@ static void (*minunit_teardown)(void) = NULL;
  * The returned real time is only useful for computing an elapsed time
  * between two calls to this function.
  */
-static double mu_timer_real(void)
+static double mu_timer_real( )
 {
 #if defined(_WIN32)
+	FILETIME tm;
+	ULONGLONG t;
+#if defined(NTDDI_WIN8) && NTDDI_VERSION >= NTDDI_WIN8
+	/* Windows 8, Windows Server 2012 and later. ---------------- */
+	GetSystemTimePreciseAsFileTime( &tm );
+#else
 	/* Windows 2000 and later. ---------------------------------- */
-	LARGE_INTEGER Time;
-	LARGE_INTEGER Frequency;
-	
-	QueryPerformanceFrequency(&Frequency);
-	QueryPerformanceCounter(&Time);
-	
-	Time.QuadPart *= 1000000;
-	Time.QuadPart /= Frequency.QuadPart;
-	
-	return (double)Time.QuadPart / 1000000.0;
+	GetSystemTimeAsFileTime( &tm );
+#endif
+	t = ((ULONGLONG)tm.dwHighDateTime << 32) | (ULONGLONG)tm.dwLowDateTime;
+	return (double)t / 10000000.0;
 
 #elif (defined(__hpux) || defined(hpux)) || ((defined(__sun__) || defined(__sun) || defined(sun)) && (defined(__SVR4) || defined(__svr4__)))
 	/* HP-UX, Solaris. ------------------------------------------ */
@@ -267,7 +237,6 @@ static double mu_timer_real(void)
 
 #elif defined(_POSIX_VERSION)
 	/* POSIX. --------------------------------------------------- */
-	struct timeval tm;
 #if defined(_POSIX_TIMERS) && (_POSIX_TIMERS > 0)
 	{
 		struct timespec ts;
@@ -297,6 +266,7 @@ static double mu_timer_real(void)
 #endif /* _POSIX_TIMERS */
 
 	/* AIX, BSD, Cygwin, HP-UX, Linux, OSX, POSIX, Solaris. ----- */
+	struct timeval tm;
 	gettimeofday( &tm, NULL );
 	return (double)tm.tv_sec + (double)tm.tv_usec / 1000000.0;
 #else
@@ -308,7 +278,7 @@ static double mu_timer_real(void)
  * Returns the amount of CPU time used by the current process,
  * in seconds, or -1.0 if an error occurred.
  */
-static double mu_timer_cpu(void)
+static double mu_timer_cpu( )
 {
 #if defined(_WIN32)
 	/* Windows -------------------------------------------------- */
@@ -316,14 +286,15 @@ static double mu_timer_cpu(void)
 	FILETIME exitTime;
 	FILETIME kernelTime;
 	FILETIME userTime;
-
-	/* This approach has a resolution of 1/64 second. Unfortunately, Windows' API does not offer better */
 	if ( GetProcessTimes( GetCurrentProcess( ),
-		&createTime, &exitTime, &kernelTime, &userTime ) != 0 )
+		&createTime, &exitTime, &kernelTime, &userTime ) != -1 )
 	{
-		ULARGE_INTEGER userSystemTime;
-		memcpy(&userSystemTime, &userTime, sizeof(ULARGE_INTEGER));
-		return (double)userSystemTime.QuadPart / 10000000.0;
+		SYSTEMTIME userSystemTime;
+		if ( FileTimeToSystemTime( &userTime, &userSystemTime ) != -1 )
+			return (double)userSystemTime.wHour * 3600.0 +
+				(double)userSystemTime.wMinute * 60.0 +
+				(double)userSystemTime.wSecond +
+				(double)userSystemTime.wMilliseconds / 1000.0;
 	}
 
 #elif defined(__unix__) || defined(__unix) || defined(unix) || (defined(__APPLE__) && defined(__MACH__))
@@ -388,4 +359,4 @@ static double mu_timer_cpu(void)
 }
 #endif
 
-#endif /* MINUNIT_MINUNIT_H */
+#endif /* __MINUNIT_H__ */

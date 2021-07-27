@@ -4,9 +4,8 @@
             "name": "Win32",
             "includePath": [
                 "${workspaceFolder}/**",
-                "${workspaceFolder}/lib/",
-                "${workspaceFolder}/lib/unitTest",
-                "${workspaceFolder}/lib/micros"
+                "${workspaceFolder}/lib/micros",
+                "${workspaceFolder}/lib/unitTest"
             ],
             "defines": [
                 "_DEBUG",

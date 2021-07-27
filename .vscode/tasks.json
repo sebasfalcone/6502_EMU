@@ -9,6 +9,7 @@
 				"-g",
 				"-I${workspaceFolder}/lib/micros",
 				"-I${workspaceFolder}/lib/unitTest",
+				"-I${workspaceFolder}/lib/micros",
 				"${workspaceFolder}/lib/micros/micro6502.cpp",
 				"${file}",
 				"-o",
