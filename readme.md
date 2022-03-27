@@ -9,8 +9,9 @@
 
 Zero page importance:
 Only takes an 8bit addres so:
-  -you have to fetch only one time from memory (improoves speed)
-  -Only the LSB helds the instruction, making it 1 byte shorter (saves space)
+  
+  - You have to fetch only one time from memory (improoves speed)
+  - Only the LSB helds the instruction, making it 1 byte shorter (saves space)
 
 -----
 Progress:
